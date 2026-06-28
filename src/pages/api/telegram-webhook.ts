@@ -78,7 +78,8 @@ async function sendTelegramDocument(chatId: number, pdfBuffer: Uint8Array, filen
   const formData = new FormData();
   formData.append('chat_id', chatId.toString());
   
-  const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+  // GANTI MENJADI:
+const blob = new Blob([pdfBuffer as any], { type: 'application/pdf' });
   formData.append('document', blob, filename);
 
   await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument`, {
