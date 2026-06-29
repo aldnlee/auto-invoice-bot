@@ -1,11 +1,365 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// src/pages/index.astro
+import '../styles/global.css';
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Invoice Builder</title>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen p-4 md:p-8">
+
+  <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+    
+    <div class="lg:col-span-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between gap-4 h-fit">
+      <div>
+        <h2 class="text-xl font-bold text-slate-900">Invoice Editor</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Ubah data di bawah untuk memperbarui live preview secara instan.</p>
+        
+        <hr class="border-slate-100 my-4" />
+
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Nomor Invoice</label>
+              <input type="text" id="inputInvoiceNum" value="#INV-73892" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Nama Client</label>
+              <input type="text" id="inputClient" value="PT. Maju Mundur" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Pilih Tanggal Invoice</label>
+            <input type="date" id="inputDate" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider">Daftar Item / Layanan</label>
+              <button id="btnAddItem" type="button" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-1 px-2.5 rounded-lg transition cursor-pointer">
+                ➕ Tambah Item
+              </button>
+            </div>
+            
+            <div id="itemsContainer" class="space-y-3 max-h-[320px] overflow-y-auto pr-1">
+              </div>
+          </div>
+
+          <hr class="border-slate-100 my-2" />
+
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Biaya Admin (%)</label>
+            <input type="number" id="inputAdminPercent" value="2.5" min="0" step="0.1" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-100">
+        <button id="btnDownload" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-sm cursor-pointer">
+          💾 Download PDF Invoice
+        </button>
+      </div>
+    </div>
+
+    <div class="lg:col-span-7 flex flex-col gap-4">
+      <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Live Preview Canvas</span>
+      
+      <div id="invoiceCanvas" class="bg-white p-12 rounded-xl shadow-md border border-slate-200 aspect-[1/1.414] w-full flex flex-col justify-between font-sans">
+        
+        <div>
+          <div class="flex justify-between items-start border-b border-slate-100 pb-8 mb-8">
+            <div>
+              <h1 class="text-3xl font-black tracking-tight text-slate-900">INVOICE</h1>
+              <p class="text-xs text-slate-400 font-mono mt-1" id="viewInvoiceNum">#INV-73892</p>
+            </div>
+            <div class="flex flex-col items-end text-right">
+              <img 
+                src="/aldn.prjpp.png" 
+                alt="Logo Company" 
+                class="h-15 w-auto object-contain mb-1" 
+                crossorigin="anonymous"
+              />
+              <p class="text-xs text-slate-400">ALDN PROJECTS</p>
+            </div>
+          </div>
+
+          <div class="mb-10">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Ditagihkan Kepada:</h4>
+            <p id="viewClient" class="text-base font-bold text-slate-700">PT. Maju Mundur</p>
+            <p id="viewDate" class="text-xs text-slate-400 mt-1">Tanggal: -</p>
+          </div>
+
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b-2 border-slate-100 text-xs font-bold uppercase text-slate-400 tracking-wider">
+                <th class="pb-3 w-7/12">Deskripsi Event / Layanan</th>
+                <th class="pb-3 text-center w-1/12">Qty</th>
+                <th class="pb-3 text-right w-2/12">Harga Satuan</th>
+                <th class="pb-3 text-right w-2/12">Total</th>
+              </tr>
+            </thead>
+            <tbody id="invoiceTableBody" class="divide-y divide-slate-100 text-sm text-slate-700">
+              </tbody>
+          </table>
+        </div>
+
+        <div class="border-t border-slate-100 pt-6 flex flex-col items-end gap-2">
+          <div class="flex gap-12 text-sm">
+            <span class="text-slate-400 font-medium">Subtotal:</span>
+            <span id="subTotal" class="text-slate-700 font-semibold">Rp 0</span>
+          </div>
+          <div class="flex gap-12 text-sm">
+            <span class="text-slate-400 font-medium" id="labelAdmin">Biaya Admin (2.5%):</span>
+            <span id="viewAdminFee" class="text-slate-700 font-semibold">Rp 0</span>
+          </div>
+          <div class="flex gap-12 text-base border-t border-dashed border-slate-200 pt-2 mt-1">
+            <span class="text-slate-900 font-bold">Total Tagihan:</span>
+            <span id="finalTotal" class="text-xl font-black text-blue-600">Rp 0</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    interface InvoiceItem {
+      id: string;
+      description: string;
+      qty: number;
+      price: number;
+    }
+
+    async function initInvoiceApp() {
+      // @ts-ignore
+      const { default: html2pdf } = await import('html2pdf.js');
+
+      // State Data Utama
+      let itemsList: InvoiceItem[] = [
+        { id: '1', description: 'Geminithon Hackathon Production', qty: 1, price: 2500000 }
+      ];
+
+      // Referensi Elemen DOM Editor Global
+      const inputInvoiceNum = document.getElementById('inputInvoiceNum') as HTMLInputElement;
+      const inputClient = document.getElementById('inputClient') as HTMLInputElement;
+      const inputDate = document.getElementById('inputDate') as HTMLInputElement;
+      const inputAdminPercent = document.getElementById('inputAdminPercent') as HTMLInputElement;
+      const itemsContainer = document.getElementById('itemsContainer');
+      const btnAddItem = document.getElementById('btnAddItem');
+
+      // Referensi Elemen DOM Preview Canvas
+      const viewInvoiceNum = document.getElementById('viewInvoiceNum');
+      const viewClient = document.getElementById('viewClient');
+      const invoiceTableBody = document.getElementById('invoiceTableBody');
+      const subTotal = document.getElementById('subTotal');
+      const labelAdmin = document.getElementById('labelAdmin');
+      const viewAdminFee = document.getElementById('viewAdminFee');
+      const finalTotal = document.getElementById('finalTotal');
+      const viewDate = document.getElementById('viewDate');
+      const btnDownload = document.getElementById('btnDownload') as HTMLButtonElement;
+
+      // Mengatur Tanggal Hari Ini Sebagai Default Nilai Input Date Picker (format: YYYY-MM-DD)
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      
+      if (inputDate) {
+        inputDate.value = `${yyyy}-${mm}-${dd}`;
+      }
+
+      // Helper format Rupiah IDR
+      const formatRupiah = (angka: number) => {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(angka);
+      };
+
+      // Helper format Tanggal Indonesia (contoh: 30 Juni 2026) dari input date
+      const formatTanggalIndo = (dateString: string) => {
+        if (!dateString) return '-';
+        const dateObj = new Date(dateString);
+        return dateObj.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+      };
+
+      // Fungsi Me-render Form Input di Editor Berdasarkan State Array
+      function renderEditorInputs() {
+        if (!itemsContainer) return;
+        itemsContainer.innerHTML = '';
+
+        itemsList.forEach((item) => {
+          const itemRow = document.createElement('div');
+          itemRow.className = "p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2 relative group";
+          itemRow.innerHTML = `
+            <div class="flex justify-between items-center gap-2">
+              <input type="text" data-id="${item.id}" data-field="description" value="${item.description}" placeholder="Nama Layanan/Event" class="w-full bg-white border border-slate-200 rounded-md p-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              ${itemsList.length > 1 ? `
+                <button type="button" data-id="${item.id}" class="btn-delete text-red-500 hover:text-red-700 text-xs font-bold p-1 cursor-pointer" title="Hapus Item">
+                  ❌
+                </button>
+              ` : ''}
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[10px] font-medium text-slate-400 uppercase">Qty</label>
+                <input type="number" data-id="${item.id}" data-field="qty" value="${item.qty}" min="1" class="w-full bg-white border border-slate-200 rounded-md p-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-[10px] font-medium text-slate-400 uppercase">Harga Satuan</label>
+                <input type="number" data-id="${item.id}" data-field="price" value="${item.price}" min="0" class="w-full bg-white border border-slate-200 rounded-md p-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              </div>
+            </div>
+          `;
+          itemsContainer.appendChild(itemRow);
+        });
+
+        bindDynamicEvents();
+      }
+
+      // Fungsi Sinkronisasi Realtime & Kalkulasi Finansial Keseluruhan
+      function updatePreview() {
+        if (viewInvoiceNum && inputInvoiceNum) viewInvoiceNum.innerText = inputInvoiceNum.value || '#INV-00000';
+        if (viewClient && inputClient) viewClient.innerText = inputClient.value || '-';
+        
+        // Perbarui Tanggal di Preview secara Dinamis berdasarkan Date Picker
+        if (viewDate && inputDate) {
+          viewDate.innerText = `Tanggal: ${formatTanggalIndo(inputDate.value)}`;
+        }
+
+        if (!invoiceTableBody) return;
+        invoiceTableBody.innerHTML = '';
+
+        let totalBaseAccumulator = 0;
+
+        itemsList.forEach((item) => {
+          const rowTotal = item.qty * item.price;
+          totalBaseAccumulator += rowTotal;
+
+          const tr = document.createElement('tr');
+          tr.className = "divide-y divide-slate-100";
+          tr.innerHTML = `
+            <td class="py-3 font-medium text-slate-900 border-none">${item.description || '-'}</td>
+            <td class="py-3 text-center border-none">${item.qty}</td>
+            <td class="py-3 text-right border-none">${formatRupiah(item.price)}</td>
+            <td class="py-3 text-right font-bold text-slate-900 border-none">${formatRupiah(rowTotal)}</td>
+          `;
+          invoiceTableBody.appendChild(tr);
+        });
+
+        const adminPercent = parseFloat(inputAdminPercent?.value) || 0;
+        const adminFee = (adminPercent / 100) * totalBaseAccumulator;
+        const grandTotal = totalBaseAccumulator + adminFee;
+
+        if (subTotal) subTotal.innerText = formatRupiah(totalBaseAccumulator);
+        if (labelAdmin) labelAdmin.innerText = `Biaya Admin (${adminPercent}%):`;
+        if (viewAdminFee) viewAdminFee.innerText = formatRupiah(adminFee);
+        if (finalTotal) finalTotal.innerText = formatRupiah(grandTotal);
+      }
+
+      // Memasang Event Listener untuk Input Dinamis
+      function bindDynamicEvents() {
+        const inputs = itemsContainer?.querySelectorAll('input');
+        inputs?.forEach(input => {
+          input.addEventListener('input', (e) => {
+            const target = e.target as HTMLInputElement;
+            const itemId = target.getAttribute('data-id');
+            const field = target.getAttribute('data-field');
+            
+            const item = itemsList.find(i => i.id === itemId);
+            if (item && field) {
+              if (field === 'description') item.description = target.value;
+              if (field === 'qty') item.qty = parseInt(target.value) || 0;
+              if (field === 'price') item.price = parseInt(target.value) || 0;
+              
+              updatePreview();
+            }
+          });
+        });
+
+        const deleteButtons = itemsContainer?.querySelectorAll('.btn-delete');
+        deleteButtons?.forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const target = e.currentTarget as HTMLButtonElement;
+            const itemId = target.getAttribute('data-id');
+            
+            itemsList = itemsList.filter(i => i.id !== itemId);
+            
+            renderEditorInputs();
+            updatePreview();
+          });
+        });
+      }
+
+      // Listener Tombol Tambah Item
+      btnAddItem?.addEventListener('click', () => {
+        const newId = String(Date.now());
+        itemsList.push({
+          id: newId,
+          description: '',
+          qty: 1,
+          price: 0
+        });
+        renderEditorInputs();
+        updatePreview();
+      });
+
+      inputInvoiceNum?.addEventListener('input', updatePreview);
+      inputClient?.addEventListener('input', updatePreview);
+      inputDate?.addEventListener('change', updatePreview); // Mendengarkan perubahan kalender
+      inputAdminPercent?.addEventListener('input', updatePreview);
+
+      renderEditorInputs();
+      updatePreview();
+
+      // Penanganan Aksi Ekspor PDF
+      btnDownload?.addEventListener('click', () => {
+        const element = document.getElementById('invoiceCanvas');
+        if (!element) return;
+
+        const clientName = inputClient?.value.replace(/\s+/g, '_') || 'Client';
+        
+        const originalText = btnDownload.innerHTML;
+        btnDownload.innerHTML = '⏳ Generating PDF...';
+        btnDownload.setAttribute('disabled', 'true');
+        btnDownload.style.opacity = '0.6';
+
+        const opt = {
+          margin:       0.3,
+          filename:     `Invoice_${clientName}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { 
+            scale: 3, 
+            useCORS: true,
+            ignoreElements: (el: Element) => {
+              if (el.tagName && (el.tagName.includes('-') || el.className?.toString().includes('toolbar') || el.id?.toString().includes('toolbar'))) {
+                return true; 
+              }
+              return false;
+            }
+          }
+        };
+        
+        html2pdf().from(element).set(opt as any).save()
+          .then(() => {
+            btnDownload.innerHTML = originalText;
+            btnDownload.removeAttribute('disabled');
+            btnDownload.style.opacity = '1';
+          })
+          .catch((err: any) => {
+            console.error('PDF Generation Error:', err);
+            btnDownload.innerHTML = originalText;
+            btnDownload.removeAttribute('disabled');
+            btnDownload.style.opacity = '1';
+          });
+      });
+    }
+
+    if (typeof window !== 'undefined') {
+      initInvoiceApp();
+    }
+  </script>
+</body>
+</html>

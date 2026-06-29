@@ -1,8 +1,12 @@
 import { defineConfig } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
+import tailwind from '@tailwindcss/vite';
 
-// Konfigurasi agar Astro berjalan dalam mode Server-Side Rendering (SSR) di Cloudflare
+// https://astro.build/config
 export default defineConfig({
   output: 'server',
   adapter: cloudflare(),
+  vite: {
+    plugins: [tailwind()],
+  },
 });

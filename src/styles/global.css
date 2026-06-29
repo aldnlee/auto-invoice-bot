@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+/* FORCE TRADITIONAL COLOR FORMATS FOR HTML2CANVAS 
+  Kita override warna-warna utama yang dipakai di invoice ke format HEX/RGB standard.
+*/
+:root {
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+}
+
+#invoiceCanvas, #invoiceCanvas * {
+  /* Memaksa elemen di dalam kanvas invoice menggunakan warna fallback di atas */
+  box-shadow: none !important;
+}
