@@ -21,6 +21,20 @@ import '../styles/global.css';
         <hr class="border-slate-100 my-4" />
 
         <div class="space-y-4">
+          <div class="p-3 bg-blue-50/50 border border-blue-100/70 rounded-xl space-y-3">
+            <span class="block text-xs font-bold uppercase text-blue-700 tracking-wider">Detail Penerbit (Anda)</span>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] font-semibold uppercase text-slate-500 mb-0.5">Nama / Perusahaan</label>
+                <input type="text" id="inputMyName" value="Alden Lee" class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-semibold uppercase text-slate-500 mb-0.5">Profesi / Sub-detail</label>
+                <input type="text" id="inputMyProf" value="Tech-Creative Professional" class="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+              </div>
+            </div>
+          </div>
+
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Nomor Invoice</label>
@@ -38,6 +52,15 @@ import '../styles/global.css';
           </div>
 
           <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Upload Logo Invoice (Sementara)</label>
+            <div class="flex items-center gap-3">
+              <input type="file" id="inputLogo" accept="image/*" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 transition cursor-pointer" />
+              <button type="button" id="btnResetLogo" class="hidden text-xs text-red-500 hover:text-red-700 font-medium cursor-pointer">Hapus</button>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-1">*Logo akan kembali ke default jika halaman di-refresh.</p>
+          </div>
+
+          <div>
             <div class="flex justify-between items-center mb-2">
               <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider">Daftar Item / Layanan</label>
               <button id="btnAddItem" type="button" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-1 px-2.5 rounded-lg transition cursor-pointer">
@@ -45,7 +68,7 @@ import '../styles/global.css';
               </button>
             </div>
             
-            <div id="itemsContainer" class="space-y-3 max-h-[320px] overflow-y-auto pr-1">
+            <div id="itemsContainer" class="space-y-3 max-h-[200px] overflow-y-auto pr-1">
               </div>
           </div>
 
@@ -78,12 +101,14 @@ import '../styles/global.css';
             </div>
             <div class="flex flex-col items-end text-right">
               <img 
-                src="/aldn.prjpp.png" 
+                id="viewLogo"
+                src="/logo.png" 
                 alt="Logo Company" 
-                class="h-15 w-auto object-contain mb-1" 
+                class="h-12 w-auto object-contain mb-1 max-w-[160px]" 
                 crossorigin="anonymous"
               />
-              <p class="text-xs text-slate-400">ALDN PROJECTS</p>
+              <h3 class="font-bold text-slate-800 text-sm" id="viewMyName">Alden Lee</h3>
+              <p class="text-xs text-slate-400" id="viewMyProf">Tech-Creative Professional</p>
             </div>
           </div>
 
@@ -139,22 +164,29 @@ import '../styles/global.css';
       // @ts-ignore
       const { default: html2pdf } = await import('html2pdf.js');
 
-      // State Data Utama
+      const defaultLogoUrl = '/logo.png';
       let itemsList: InvoiceItem[] = [
         { id: '1', description: 'Geminithon Hackathon Production', qty: 1, price: 2500000 }
       ];
 
-      // Referensi Elemen DOM Editor Global
+      // Referensi Elemen DOM Editor
+      const inputMyName = document.getElementById('inputMyName') as HTMLInputElement;
+      const inputMyProf = document.getElementById('inputMyProf') as HTMLInputElement;
       const inputInvoiceNum = document.getElementById('inputInvoiceNum') as HTMLInputElement;
       const inputClient = document.getElementById('inputClient') as HTMLInputElement;
       const inputDate = document.getElementById('inputDate') as HTMLInputElement;
+      const inputLogo = document.getElementById('inputLogo') as HTMLInputElement;
+      const btnResetLogo = document.getElementById('btnResetLogo') as HTMLButtonElement;
       const inputAdminPercent = document.getElementById('inputAdminPercent') as HTMLInputElement;
       const itemsContainer = document.getElementById('itemsContainer');
       const btnAddItem = document.getElementById('btnAddItem');
 
       // Referensi Elemen DOM Preview Canvas
+      const viewMyName = document.getElementById('viewMyName');
+      const viewMyProf = document.getElementById('viewMyProf');
       const viewInvoiceNum = document.getElementById('viewInvoiceNum');
       const viewClient = document.getElementById('viewClient');
+      const viewLogo = document.getElementById('viewLogo') as HTMLImageElement;
       const invoiceTableBody = document.getElementById('invoiceTableBody');
       const subTotal = document.getElementById('subTotal');
       const labelAdmin = document.getElementById('labelAdmin');
@@ -163,29 +195,41 @@ import '../styles/global.css';
       const viewDate = document.getElementById('viewDate');
       const btnDownload = document.getElementById('btnDownload') as HTMLButtonElement;
 
-      // Mengatur Tanggal Hari Ini Sebagai Default Nilai Input Date Picker (format: YYYY-MM-DD)
+      // Inisialisasi Tanggal hari ini
       const today = new Date();
       const yyyy = today.getFullYear();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const dd = String(today.getDate()).padStart(2, '0');
-      
-      if (inputDate) {
-        inputDate.value = `${yyyy}-${mm}-${dd}`;
-      }
+      if (inputDate) inputDate.value = `${yyyy}-${mm}-${dd}`;
 
-      // Helper format Rupiah IDR
       const formatRupiah = (angka: number) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(angka);
       };
 
-      // Helper format Tanggal Indonesia (contoh: 30 Juni 2026) dari input date
       const formatTanggalIndo = (dateString: string) => {
         if (!dateString) return '-';
         const dateObj = new Date(dateString);
         return dateObj.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
       };
 
-      // Fungsi Me-render Form Input di Editor Berdasarkan State Array
+      // Listener Unggah Logo Temporer
+      inputLogo?.addEventListener('change', () => {
+        const file = inputLogo.files?.[0];
+        if (file && viewLogo) {
+          const blobUrl = URL.createObjectURL(file);
+          viewLogo.src = blobUrl;
+          btnResetLogo?.classList.remove('hidden');
+        }
+      });
+
+      btnResetLogo?.addEventListener('click', () => {
+        if (viewLogo && inputLogo) {
+          viewLogo.src = defaultLogoUrl;
+          inputLogo.value = '';
+          btnResetLogo.classList.add('hidden');
+        }
+      });
+
       function renderEditorInputs() {
         if (!itemsContainer) return;
         itemsContainer.innerHTML = '';
@@ -197,9 +241,7 @@ import '../styles/global.css';
             <div class="flex justify-between items-center gap-2">
               <input type="text" data-id="${item.id}" data-field="description" value="${item.description}" placeholder="Nama Layanan/Event" class="w-full bg-white border border-slate-200 rounded-md p-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
               ${itemsList.length > 1 ? `
-                <button type="button" data-id="${item.id}" class="btn-delete text-red-500 hover:text-red-700 text-xs font-bold p-1 cursor-pointer" title="Hapus Item">
-                  ❌
-                </button>
+                <button type="button" data-id="${item.id}" class="btn-delete text-red-500 hover:text-red-700 text-xs font-bold p-1 cursor-pointer">❌</button>
               ` : ''}
             </div>
             <div class="grid grid-cols-3 gap-2">
@@ -215,25 +257,22 @@ import '../styles/global.css';
           `;
           itemsContainer.appendChild(itemRow);
         });
-
         bindDynamicEvents();
       }
 
-      // Fungsi Sinkronisasi Realtime & Kalkulasi Finansial Keseluruhan
       function updatePreview() {
+        // Sinkronisasi Detail Penerbit (Anda) secara Realtime
+        if (viewMyName && inputMyName) viewMyName.innerText = inputMyName.value || '-';
+        if (viewMyProf && inputMyProf) viewMyProf.innerText = inputMyProf.value || '-';
+
         if (viewInvoiceNum && inputInvoiceNum) viewInvoiceNum.innerText = inputInvoiceNum.value || '#INV-00000';
         if (viewClient && inputClient) viewClient.innerText = inputClient.value || '-';
-        
-        // Perbarui Tanggal di Preview secara Dinamis berdasarkan Date Picker
-        if (viewDate && inputDate) {
-          viewDate.innerText = `Tanggal: ${formatTanggalIndo(inputDate.value)}`;
-        }
+        if (viewDate && inputDate) viewDate.innerText = `Tanggal: ${formatTanggalIndo(inputDate.value)}`;
 
         if (!invoiceTableBody) return;
         invoiceTableBody.innerHTML = '';
 
         let totalBaseAccumulator = 0;
-
         itemsList.forEach((item) => {
           const rowTotal = item.qty * item.price;
           totalBaseAccumulator += rowTotal;
@@ -259,7 +298,6 @@ import '../styles/global.css';
         if (finalTotal) finalTotal.innerText = formatRupiah(grandTotal);
       }
 
-      // Memasang Event Listener untuk Input Dinamis
       function bindDynamicEvents() {
         const inputs = itemsContainer?.querySelectorAll('input');
         inputs?.forEach(input => {
@@ -267,13 +305,11 @@ import '../styles/global.css';
             const target = e.target as HTMLInputElement;
             const itemId = target.getAttribute('data-id');
             const field = target.getAttribute('data-field');
-            
             const item = itemsList.find(i => i.id === itemId);
             if (item && field) {
               if (field === 'description') item.description = target.value;
               if (field === 'qty') item.qty = parseInt(target.value) || 0;
               if (field === 'price') item.price = parseInt(target.value) || 0;
-              
               updatePreview();
             }
           });
@@ -284,43 +320,37 @@ import '../styles/global.css';
           btn.addEventListener('click', (e) => {
             const target = e.currentTarget as HTMLButtonElement;
             const itemId = target.getAttribute('data-id');
-            
             itemsList = itemsList.filter(i => i.id !== itemId);
-            
             renderEditorInputs();
             updatePreview();
           });
         });
       }
 
-      // Listener Tombol Tambah Item
       btnAddItem?.addEventListener('click', () => {
         const newId = String(Date.now());
-        itemsList.push({
-          id: newId,
-          description: '',
-          qty: 1,
-          price: 0
-        });
+        itemsList.push({ id: newId, description: '', qty: 1, price: 0 });
         renderEditorInputs();
         updatePreview();
       });
 
+      // Event Listener Global untuk Form Input
+      inputMyName?.addEventListener('input', updatePreview);
+      inputMyProf?.addEventListener('input', updatePreview);
       inputInvoiceNum?.addEventListener('input', updatePreview);
       inputClient?.addEventListener('input', updatePreview);
-      inputDate?.addEventListener('change', updatePreview); // Mendengarkan perubahan kalender
+      inputDate?.addEventListener('change', updatePreview);
       inputAdminPercent?.addEventListener('input', updatePreview);
 
       renderEditorInputs();
       updatePreview();
 
-      // Penanganan Aksi Ekspor PDF
+      // Penanganan Ekspor PDF
       btnDownload?.addEventListener('click', () => {
         const element = document.getElementById('invoiceCanvas');
         if (!element) return;
 
         const clientName = inputClient?.value.replace(/\s+/g, '_') || 'Client';
-        
         const originalText = btnDownload.innerHTML;
         btnDownload.innerHTML = '⏳ Generating PDF...';
         btnDownload.setAttribute('disabled', 'true');
